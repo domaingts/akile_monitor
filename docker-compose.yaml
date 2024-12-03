@@ -1,0 +1,8 @@
+services:
+  akile-monitor:
+    container_name: akile-monitor
+    image: akile-monitor:v0.0.1
+    network_mode: host
+    volumes:
+      - ./config.json:/etc/akile-monitor/config.json:ro
+      - ./data:/etc/akile-monitor/data:rw

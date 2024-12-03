@@ -1,7 +1,7 @@
 {
   "auth_secret": "auth_secret",
-  "listen": ":3000",
-  "enable_tg": true,
+  "listen": "127.0.0.1:3000",
+  "enable_tg": false,
   "tg_token": "your_telegram_bot_token",
   "hook_uri": "/hook",
   "update_uri": "/monitor",

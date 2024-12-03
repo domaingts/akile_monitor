@@ -2,7 +2,7 @@ FROM golang:1.23-alpine3.20 AS builder
 
 COPY . .
 
-RUN CGO_ENABLE=0 go build -o /akile-monitor ./main.go
+RUN CGO_ENABLE=0 go build -o /akile-monitor ./
 
 FROM alpine:3.20 AS dist
 
