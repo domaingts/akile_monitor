@@ -33,7 +33,7 @@ type M struct {
 var db *gorm.DB
 
 func initDb() {
-	Db, err := gorm.Open(sqlite.Open("ak_monitor.db"), &gorm.Config{})
+	Db, err := gorm.Open(sqlite.Open("/etc/akile-monitor/data/ak_monitor.db"), &gorm.Config{})
 	if err != nil {
 		log.Panic(err)
 	}

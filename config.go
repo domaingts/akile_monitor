@@ -20,7 +20,7 @@ type Config struct {
 var cfg *Config
 
 func LoadConfig() {
-	file, err := os.ReadFile("config.json")
+	file, err := os.ReadFile("/etc/akile-monitor/config.json")
 	if err != nil {
 		log.Panic(err)
 	}
