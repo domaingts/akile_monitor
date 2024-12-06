@@ -26,11 +26,6 @@ type Data struct {
 	Name string `gorm:"primaryKey"`
 	Data string
 }
-type M struct {
-	Host      *model.Host
-	State     *model.HostState
-	TimeStamp int64
-}
 
 var db *gorm.DB
 var filedb *gorm.DB
@@ -103,7 +98,7 @@ func monitor(_ context.Context, c *app.RequestContext) {
 			message, _ = io.ReadAll(r)
 			r.Close()
 
-			var d M
+			var d model.Data
 
 			err = json.Unmarshal(message, &d)
 			if err != nil {
@@ -139,12 +134,12 @@ func main() {
 	if cfg.TgChatID != 0 {
 		go func() {
 			for {
-				var mm []M
+				var mm []model.Data
 				data := fetchData()
 				json.Unmarshal(data, &mm)
 				for _, v := range mm {
 					// 30秒内离线
-					if v.TimeStamp < time.Now().Unix()-60 {
+					if v.Timestamp < time.Now().Unix()-60 {
 						if !offline[v.Host.Name] {
 							offline[v.Host.Name] = true
 							msg := fmt.Sprintf("❌ %s 离线了", v.Host.Name)
@@ -286,7 +281,7 @@ func fetchData() []byte {
 	var ret []Data
 	db.Model(&Data{}).Find(&ret)
 
-	var mm []M
+	var mm []model.Data
 
 	//排序根据Name 10在9后面
 	sort.Slice(ret, func(i, j int) bool {
@@ -295,7 +290,7 @@ func fetchData() []byte {
 
 	//var jsonData string
 	for _, v := range ret {
-		var m M
+		var m model.Data
 		json.Unmarshal([]byte(v.Data), &m)
 		mm = append(mm, m)
 	}

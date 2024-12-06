@@ -64,16 +64,13 @@ func main() {
 		case <-done:
 			return
 		case t := <-ticker.C:
-			var D struct {
-				Host      *model.Host
-				State     *model.HostState
-				TimeStamp int64
+			data := &model.Data{
+				Host:      GetHost(),
+				State:     GetState(),
+				Timestamp: t.Unix(),
 			}
-			D.Host = GetHost()
-			D.State = GetState()
-			D.TimeStamp = t.Unix()
 			//gzip压缩json
-			dataBytes, err := json.Marshal(D)
+			dataBytes, err := json.Marshal(data)
 			if err != nil {
 				log.Println("json.Marshal error:", err)
 				return

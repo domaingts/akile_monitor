@@ -1,6 +1,7 @@
 package main
 
 import (
+	"akile_monitor/client/model"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -37,9 +38,9 @@ func startbot() {
 					var ret []Data
 					db.Model(&Data{}).Find(&ret)
 
-					var mm []M
+					var mm []model.Data
 					for _, v := range ret {
-						var m M
+						var m model.Data
 						json.Unmarshal([]byte(v.Data), &m)
 						mm = append(mm, m)
 					}
@@ -56,7 +57,7 @@ func startbot() {
 					var swap uint64
 					time_now := time.Now().Unix()
 					for _, v := range mm {
-						if v.TimeStamp > time_now-30 {
+						if v.Timestamp > time_now-30 {
 							online++
 						}
 						cpu += parseCPU(v.Host.CPU[0])
@@ -80,16 +81,16 @@ func startbot() {
 
 					msg := fmt.Sprintf(`统计信息
 ===========================
-服务器数量： %d
-在线服务器： %d
-CPU核心数： %d
-内存： %s [%s/%s]
-交换分区： %s [%s/%s]
-下行速度： ↓%s/s
-上行速度： ↑%s/s
-下行流量： ↓%s
-上行流量： ↑%s
-流量对等性： %s
+服务器数量: %d
+在线服务器: %d
+CPU核心数: %d
+内存: %s [%s/%s]
+交换分区: %s [%s/%s]
+下行速度: ↓%s/s
+上行速度: ↑%s/s
+Download Traffic: ↓%s
+Upload Traffic: ↑%s
+流量对等性: %s
 
 更新于：%s`, len(mm), online, cpu, fmt.Sprintf("%.2f%%", float64(memused)/float64(mem)*100), formatSize(memused), formatSize(mem), fmt.Sprintf("%.2f%%", float64(swapused)/float64(swap)*100), formatSize(swapused), formatSize(swap), formatSize(downspeed), formatSize(upspeed), formatSize(downflow), formatSize(upflow), duideng, time.Now().Format("2006-01-02 15:04:05"))
 					bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, msg))
