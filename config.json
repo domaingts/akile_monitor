@@ -6,5 +6,6 @@
   "hook_uri": "/hook",
   "update_uri": "/monitor",
   "web_uri": "/ws",
-  "hook_token": "hook_token"
+  "hook_token": "hook_token",
+  "tg_chat_id": 0
 }

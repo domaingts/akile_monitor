@@ -91,7 +91,7 @@ CPU核心数： %d
 上行流量： ↑%s
 流量对等性： %s
 
-更新于：%s`, len(mm), online, cpu, fmt.Sprintf("%.2f%%", float64(memused)/float64(mem)*100), formatSize(memused), formatSize(mem), fmt.Sprintf("%.2f%%", float64(memused)/float64(mem)*100), formatSize(swapused), formatSize(swap), formatSize(downspeed), formatSize(upspeed), formatSize(downflow), formatSize(upflow), duideng, time.Now().Format("2006-01-02 15:04:05"))
+更新于：%s`, len(mm), online, cpu, fmt.Sprintf("%.2f%%", float64(memused)/float64(mem)*100), formatSize(memused), formatSize(mem), fmt.Sprintf("%.2f%%", float64(swapused)/float64(swap)*100), formatSize(swapused), formatSize(swap), formatSize(downspeed), formatSize(upspeed), formatSize(downflow), formatSize(upflow), duideng, time.Now().Format("2006-01-02 15:04:05"))
 					bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, msg))
 				}
 			} else if update.Message.Command() == "id" {
@@ -137,4 +137,19 @@ func formatSize(size uint64) string {
 	} else {
 		return fmt.Sprintf("%.2f EB", float64(size)/1024/1024/1024/1024/1024/1024)
 	}
+}
+
+func SendTGMessage(msg string) {
+	bot, err := tgbotapi.NewBotAPI(cfg.TgToken)
+	if err != nil {
+		log.Println("Error creating bot", err)
+		return
+	}
+
+	bot.Debug = false
+
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	msgs := tgbotapi.NewMessage(cfg.TgChatID, msg)
+	bot.Send(msgs)
 }

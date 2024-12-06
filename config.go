@@ -15,6 +15,7 @@ type Config struct {
 	WebUri     string `json:"web_uri"`
 	HookUri    string `json:"hook_uri"`
 	HookToken  string `json:"hook_token"`
+	TgChatID   int64  `json:"tg_chat_id"`
 }
 
 var cfg *Config
