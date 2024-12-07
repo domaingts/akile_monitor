@@ -1,7 +1,7 @@
 services:
   ak-monitor:
     container_name: ak-monitor
-    image: ak-monitor:v0.0.5
+    image: ak-monitor:v0.0.16
     ports:
       - 3000:3000
     volumes:

@@ -58,7 +58,7 @@ func main() {
 		log.Println("正在上报数据...")
 	}
 
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Second * 2)
 	defer ticker.Stop()
 
 	for {
