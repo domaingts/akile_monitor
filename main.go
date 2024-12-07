@@ -2,23 +2,17 @@ package main
 
 import (
 	"akile_monitor/client/model"
-	"bytes"
-	"compress/gzip"
-	"context"
+
 	"fmt"
-	"github.com/cloudwego/hertz/pkg/common/json"
-	"io"
 	"log"
 	"regexp"
 	"sort"
 	"strconv"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/common/json"
+
 	"github.com/glebarez/sqlite"
-	"github.com/hertz-contrib/cors"
-	"github.com/hertz-contrib/websocket"
 	"gorm.io/gorm"
 )
 
@@ -60,66 +54,66 @@ type Host struct {
 	Price   string `json:"price"`    // 价格
 }
 
-var upgrader = websocket.HertzUpgrader{
-	CheckOrigin: func(r *app.RequestContext) bool {
-		return true // 允许所有跨域请求
-	},
-	EnableCompression: true,
-} // use default options
+// var upgrader = websocket.HertzUpgrader{
+// 	CheckOrigin: func(r *app.RequestContext) bool {
+// 		return true // 允许所有跨域请求
+// 	},
+// 	EnableCompression: true,
+// } // use default options
 
-func monitor(_ context.Context, c *app.RequestContext) {
-	err := upgrader.Upgrade(c, func(conn *websocket.Conn) {
-		var authed bool
-		for {
-			mt, message, err := conn.ReadMessage()
-			if err != nil {
-				log.Printf("client: %s,read: %s\n", c.ClientIP(), err.Error())
-				break
-			}
+// func monitor(_ context.Context, c *app.RequestContext) {
+// 	err := upgrader.Upgrade(c, func(conn *websocket.Conn) {
+// 		var authed bool
+// 		for {
+// 			mt, message, err := conn.ReadMessage()
+// 			if err != nil {
+// 				log.Printf("client: %s,read: %s\n", c.ClientIP(), err.Error())
+// 				break
+// 			}
 
-			if !authed {
-				if string(message) != cfg.AuthSecret {
-					log.Printf("client: %s,auth failed\n", c.ClientIP())
-					break
-				}
-				authed = true
-				err = conn.WriteMessage(mt, []byte("auth success"))
-				if err != nil {
-					log.Printf("client: %s,write: %s\n", c.ClientIP(), err.Error())
-					break
-				}
-				continue
-			}
+// 			if !authed {
+// 				if string(message) != cfg.AuthSecret {
+// 					log.Printf("client: %s,auth failed\n", c.ClientIP())
+// 					break
+// 				}
+// 				authed = true
+// 				err = conn.WriteMessage(mt, []byte("auth success"))
+// 				if err != nil {
+// 					log.Printf("client: %s,write: %s\n", c.ClientIP(), err.Error())
+// 					break
+// 				}
+// 				continue
+// 			}
 
-			//gzip解压
-			var buf bytes.Buffer
-			buf.Write(message)
-			r, _ := gzip.NewReader(&buf)
-			message, _ = io.ReadAll(r)
-			r.Close()
+// 			//gzip解压
+// 			var buf bytes.Buffer
+// 			buf.Write(message)
+// 			r, _ := gzip.NewReader(&buf)
+// 			message, _ = io.ReadAll(r)
+// 			r.Close()
 
-			var d model.Data
+// 			var d model.Data
 
-			err = json.Unmarshal(message, &d)
-			if err != nil {
-				log.Printf("client: %s,unmarshal: %s\n", c.ClientIP(), err.Error())
-				break
-			}
+// 			err = json.Unmarshal(message, &d)
+// 			if err != nil {
+// 				log.Printf("client: %s,unmarshal: %s\n", c.ClientIP(), err.Error())
+// 				break
+// 			}
 
-			var data Data
-			db.Model(&Data{}).Where("name = ?", d.Host.Name).First(&data)
-			if data.Name == "" {
-				db.Create(&Data{Name: d.Host.Name, Data: string(message)})
-			} else {
-				db.Model(&Data{}).Where("name = ?", d.Host.Name).Update("data", string(message))
-			}
-		}
-	})
-	if err != nil {
-		log.Printf("client: %s,upgrade: %s\n", c.ClientIP(), err.Error())
-		return
-	}
-}
+// 			var data Data
+// 			db.Model(&Data{}).Where("name = ?", d.Host.Name).First(&data)
+// 			if data.Name == "" {
+// 				db.Create(&Data{Name: d.Host.Name, Data: string(message)})
+// 			} else {
+// 				db.Model(&Data{}).Where("name = ?", d.Host.Name).Update("data", string(message))
+// 			}
+// 		}
+// 	})
+// 	if err != nil {
+// 		log.Printf("client: %s,upgrade: %s\n", c.ClientIP(), err.Error())
+// 		return
+// 	}
+// }
 
 var offline = make(map[string]bool)
 
@@ -158,123 +152,126 @@ func main() {
 			}
 		}()
 	}
-	h := server.Default(server.WithHostPorts(cfg.Listen))
-	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
-	h.Use(cors.New(config))
-	h.NoHijackConnPool = true
-	h.GET("/info", Info)
-	h.POST("/info", UpdateInfo)
-	h.GET(cfg.UpdateUri, monitor)
-	h.GET(cfg.WebUri, ws)
-	h.GET(cfg.HookUri, Hook)
-	h.POST("/delete", DeleteHost)
-	h.Spin()
+	if err := newServer(); err != nil {
+		log.Printf("http server stopped: %s", err.Error())
+	}
+	// h := server.Default(server.WithHostPorts(cfg.Listen))
+	// config := cors.DefaultConfig()
+	// config.AllowAllOrigins = true
+	// h.Use(cors.New(config))
+	// h.NoHijackConnPool = true
+	// h.GET("/info", Info)
+	// h.POST("/info", UpdateInfo)
+	// // h.GET(cfg.UpdateUri, monitor)
+	// // h.GET(cfg.WebUri, ws)
+	// h.GET(cfg.HookUri, Hook)
+	// h.POST("/delete", DeleteHost)
+	// h.Spin()
 }
 
-func Hook(_ context.Context, c *app.RequestContext) {
-	token := c.Query("token")
-	if token != cfg.HookToken {
-		c.JSON(401, "auth failed")
-		return
-	}
-	data := fetchData()
-	c.JSON(200, data)
-}
+// func Hook(_ context.Context, c *app.RequestContext) {
+// 	token := c.Query("token")
+// 	if token != cfg.HookToken {
+// 		c.JSON(401, "auth failed")
+// 		return
+// 	}
+// 	data := fetchData()
+// 	c.JSON(200, data)
+// }
 
-func Info(_ context.Context, c *app.RequestContext) {
-	var ret []*Host
-	err := filedb.Model(&Host{}).Find(&ret).Error
-	if err != nil {
-		log.Println(err)
-		c.JSON(200, "[]")
-		return
-	}
-	c.JSON(200, ret)
-}
+// func Info(_ context.Context, c *app.RequestContext) {
+// 	var ret []*Host
+// 	err := filedb.Model(&Host{}).Find(&ret).Error
+// 	if err != nil {
+// 		log.Println(err)
+// 		c.JSON(200, "[]")
+// 		return
+// 	}
+// 	c.JSON(200, ret)
+// }
 
 type UpdateRequest struct {
 	AuthSecret string `json:"auth_secret"`
 	Host
 }
 
-func UpdateInfo(_ context.Context, c *app.RequestContext) {
-	var ret UpdateRequest
-	err := c.BindJSON(&ret)
-	if err != nil {
-		c.JSON(400, "bad request")
-		return
-	}
+// func UpdateInfo(_ context.Context, c *app.RequestContext) {
+// 	var ret UpdateRequest
+// 	err := c.BindJSON(&ret)
+// 	if err != nil {
+// 		c.JSON(400, "bad request")
+// 		return
+// 	}
 
-	if ret.AuthSecret != cfg.AuthSecret {
-		c.JSON(401, "auth failed")
-		return
-	}
+// 	if ret.AuthSecret != cfg.AuthSecret {
+// 		c.JSON(401, "auth failed")
+// 		return
+// 	}
 
-	var h Host
+// 	var h Host
 
-	filedb.Model(&Host{}).Where("name = ?", ret.Name).First(&h)
-	if h.Name == "" {
-		h = ret.Host
-		filedb.Model(&Host{}).Create(&h)
-	} else {
-		h = ret.Host
-		filedb.Model(&Host{}).Where("name = ?", ret.Name).Save(&h)
-	}
-	c.JSON(200, "ok")
-}
+// 	filedb.Model(&Host{}).Where("name = ?", ret.Name).First(&h)
+// 	if h.Name == "" {
+// 		h = ret.Host
+// 		filedb.Model(&Host{}).Create(&h)
+// 	} else {
+// 		h = ret.Host
+// 		filedb.Model(&Host{}).Where("name = ?", ret.Name).Save(&h)
+// 	}
+// 	c.JSON(200, "ok")
+// }
 
 type DeleteHostRequest struct {
 	AuthSecret string `json:"auth_secret"`
 	Name       string `json:"name"`
 }
 
-func DeleteHost(_ context.Context, c *app.RequestContext) {
-	var req DeleteHostRequest
-	err := c.BindJSON(&req)
-	if err != nil {
-		c.JSON(400, "bad request")
-		return
-	}
+// func DeleteHost(_ context.Context, c *app.RequestContext) {
+// 	var req DeleteHostRequest
+// 	err := c.BindJSON(&req)
+// 	if err != nil {
+// 		c.JSON(400, "bad request")
+// 		return
+// 	}
 
-	if req.AuthSecret != cfg.AuthSecret {
-		c.JSON(401, "auth failed")
-		return
-	}
+// 	if req.AuthSecret != cfg.AuthSecret {
+// 		c.JSON(401, "auth failed")
+// 		return
+// 	}
 
-	var data Data
-	db.Model(&Data{}).Where("name = ?", req.Name).First(&data)
-	if data.Name == "" {
-		c.JSON(404, "not found")
-		return
-	}
+// 	var data Data
+// 	db.Model(&Data{}).Where("name = ?", req.Name).First(&data)
+// 	if data.Name == "" {
+// 		c.JSON(404, "not found")
+// 		return
+// 	}
 
-	db.Delete(&Data{}, "name = ?", req.Name)
-	c.JSON(200, "ok")
-}
+// 	db.Delete(&Data{}, "name = ?", req.Name)
+// 	c.JSON(200, "ok")
+// }
 
-func ws(_ context.Context, c *app.RequestContext) {
-	err := upgrader.Upgrade(c, func(conn *websocket.Conn) {
-		for {
-			_, _, err := conn.ReadMessage()
-			if err != nil {
-				log.Printf("client: %s,read: %s\n", c.ClientIP(), err.Error())
-				break
-			}
+// func ws(_ context.Context, c *app.RequestContext) {
+// 	err := upgrader.Upgrade(c, func(conn *websocket.Conn) {
+// 		for {
+// 			_, _, err := conn.ReadMessage()
+// 			if err != nil {
+// 				log.Printf("client: %s,read: %s\n", c.ClientIP(), err.Error())
+// 				break
+// 			}
 
-			data := fetchData()
-			err = conn.WriteMessage(websocket.TextMessage, append([]byte("data: "), data...))
-			if err != nil {
-				log.Printf("client: %s,write: %s\n", c.ClientIP(), err.Error())
-				break
-			}
-		}
-	})
-	if err != nil {
-		log.Printf("client: %s,upgrade: %s\n", c.ClientIP(), err.Error())
-		return
-	}
-}
+// 			data := fetchData()
+// 			err = conn.WriteMessage(websocket.TextMessage, append([]byte("data: "), data...))
+// 			if err != nil {
+// 				log.Printf("client: %s,write: %s\n", c.ClientIP(), err.Error())
+// 				break
+// 			}
+// 		}
+// 	})
+// 	if err != nil {
+// 		log.Printf("client: %s,upgrade: %s\n", c.ClientIP(), err.Error())
+// 		return
+// 	}
+// }
 
 func fetchData() []byte {
 	// 模拟数据获取
