@@ -138,7 +138,6 @@ func ws(w http.ResponseWriter, r *http.Request) {
 			log.Printf("client: %s, write :%s\n", c.RemoteAddr().String(), err.Error())
 			c.Close()
 		}
-		log.Println("type", mt, "data", string(b), "have fetched data")
 	})
 
 	conn, err := upgrader.Upgrade(w, r, nil)
