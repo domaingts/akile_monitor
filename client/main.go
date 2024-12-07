@@ -4,13 +4,15 @@ import (
 	"akile_monitor/client/model"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"flag"
-	"github.com/cloudwego/hertz/pkg/common/json"
-	"github.com/henrylee2cn/goutil/calendar/cron"
+
 	"log"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/henrylee2cn/goutil/calendar/cron"
 
 	"github.com/gorilla/websocket"
 )
@@ -88,7 +90,7 @@ func main() {
 				return
 			}
 
-			err = c.WriteMessage(websocket.TextMessage, buf.Bytes())
+			err = c.WriteMessage(websocket.BinaryMessage, buf.Bytes())
 			if err != nil {
 				log.Println("write:", err)
 				return

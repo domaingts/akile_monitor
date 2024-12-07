@@ -117,6 +117,9 @@ func ws(w http.ResponseWriter, r *http.Request) {
 	}
 	upgrader.EnableCompression(true)
 	upgrader.OnClose(close)
+	upgrader.OnOpen(func(c *websocket.Conn) {
+		log.Println("connected", c.RemoteAddr().String())
+	})
 	upgrader.OnMessage(func(c *websocket.Conn, mt websocket.MessageType, b []byte) {
 		data := fetchData()
 		if err := c.WriteMessage(mt, append([]byte("data"), data...)); err != nil {

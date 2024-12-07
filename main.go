@@ -2,6 +2,7 @@ package main
 
 import (
 	"akile_monitor/client/model"
+	"encoding/json"
 
 	"fmt"
 	"log"
@@ -9,8 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"time"
-
-	"github.com/cloudwego/hertz/pkg/common/json"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -36,7 +35,7 @@ func initDb() {
 }
 
 func initFileDb() {
-	var dbfile = "ak_monitor.db"
+	var dbfile = "/etc/akile-monitor/data/ak_monitor.db"
 	Db, err := gorm.Open(sqlite.Open(dbfile), &gorm.Config{})
 	if err != nil {
 		log.Panic(err)
@@ -155,6 +154,10 @@ func main() {
 	if err := newServer(); err != nil {
 		log.Printf("http server stopped: %s", err.Error())
 	}
+
+	interrupt := make(chan struct{})
+	<-interrupt
+
 	// h := server.Default(server.WithHostPorts(cfg.Listen))
 	// config := cors.DefaultConfig()
 	// config.AllowAllOrigins = true
