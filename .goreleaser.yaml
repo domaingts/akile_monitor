@@ -1,0 +1,28 @@
+project_name: ak-client
+
+version: 2
+
+builds:
+  - id: main
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -v
+      - -trimpath
+    ldflags:
+      - -s
+      - -w
+    goos:
+      - linux
+    goarch:
+      - amd64
+    goamd64:
+      - v3
+      - v2
+      - v1
+    main: ./client
+    binary: ak-client
+
+archives:
+  - name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}-{{ .Amd64 }}"
+    format: tar.gz
